@@ -3,71 +3,74 @@ import InitialChat from '../../components/InitialChat/InitialChat';
 import ChatInput from '../../components/ChatInput/ChatInput';
 import ChattingCard from '../../components/ChattingCard/ChattingCard';
 import FeedbackModal from '../../components/FeedbackModal/FeedbackModal';
-import { useEffect, useRef, useState, useContext } from 'react';
-import data from '../../aiData/sampleData.json';
+import { useEffect, useRef, useState } from 'react';
+import data from '../../aiData/sampleData.json'
 import { useOutletContext } from "react-router-dom";
 import Navbar from '../../components/Navbar/Navbar';
 import { ThemeContext } from '../../theme/ThemeContext';
+import { useContext } from 'react';
 
 export default function Home() {
-    const [showModal, setShowModal] = useState(false);
-    const [chatId, setChatId] = useState(1);
-    const [selectedChatId, setSelectedChatId] = useState(null);
-    const [scrollToBottom, setScrollToBottom] = useState(false);
-    const listRef = useRef(null);
 
+    const [showModal, setShowModal] = useState(false)
+    const listRef = useRef(null)
+    const [chatId, setChatId] = useState(1)
+    const [selectedChatId, setSelectedChatId] = useState(null)
+    const [scrollToBottom, setScrollToBottom] = useState(false)
     const { chat, setChat } = useOutletContext();
-    const { mode } = useContext(ThemeContext);
+    const { mode } = useContext(ThemeContext)
 
-    // Generate AI response based on input
+    // GENERATING AI RESPONSE
     const generateResponse = (input) => {
-        const query = input.toLowerCase().trim();
-        const responseData = data.find(item => item.question.toLowerCase().trim() === query);
 
-        const answer = responseData ? responseData.response : "Sorry, I didn't understand your query.";
-        const timestamp = new Date();
+        const response = data.find(item => input.toLowerCase() == item.question.toLowerCase())
 
-        const newChats = [
-            {
-                type: 'Human',
-                text: input,
-                time: timestamp,
-                id: chatId
-            },
-            {
-                type: 'AI',
-                text: answer,
-                time: timestamp,
-                id: chatId + 1
-            }
-        ];
+        let answer = "Sorry, Did not understand your query!"
 
-        setChat(prev => [...prev, ...newChats]);
-        setChatId(prev => prev + 2);
-    };
+        if (response != undefined) {
+            answer = response.response
+        }
 
-    // Scroll to the latest message
+        setChat(prev => ([...prev,
+        {
+            type: 'Human',
+            text: input,
+            time: new Date(),
+            id: chatId
+        },
+        {
+            type: 'AI',
+            text: answer,
+            time: new Date(),
+            id: chatId + 1
+        }
+        ]))
+
+        setChatId(prev => prev + 2)
+
+    }
+
+    //AUTOSCROLL TO LAST ELEMENT
     useEffect(() => {
-        listRef.current?.lastElementChild?.scrollIntoView({ behavior: 'smooth' });
-    }, [scrollToBottom]);
-
-    const clearChat = () => setChat([]);
+        listRef.current?.lastElementChild?.scrollIntoView()
+    }, [scrollToBottom])
 
     return (
         <Stack
-            height="100vh"
-            justifyContent="space-between"
+            height={'100vh'}
+            justifyContent={'space-between'}
             sx={{
                 '@media (max-width:767px)': {
-                    background: mode === 'light' ? 'linear-gradient(#F9FAFA 60%, #EDE4FF)' : ''
+                    background: mode == 'light' ? 'linear-gradient(#F9FAFA 60%, #EDE4FF)' : ''
                 }
             }}
         >
+
             <Navbar />
 
-            {chat.length === 0 ? (
-                <InitialChat generateResponse={generateResponse} />
-            ) : (
+            {chat.length == 0 && <InitialChat generateResponse={generateResponse} />}
+
+            {chat.length > 0 && (
                 <Stack
                     height={1}
                     flexGrow={0}
@@ -76,23 +79,23 @@ export default function Home() {
                     sx={{
                         overflowY: 'auto',
                         '&::-webkit-scrollbar': {
-                            width: '10px'
+                            width: '10px',
                         },
                         '&::-webkit-scrollbar-track': {
                             boxShadow: 'inset 0 0 8px rgba(0,0,0,0.1)',
                             borderRadius: '8px'
                         },
                         '&::-webkit-scrollbar-thumb': {
-                            backgroundColor: 'rgba(151, 133, 186, 0.4)',
+                            backgroundColor: 'rgba(151, 133, 186,0.4)',
                             borderRadius: '8px'
                         }
                     }}
                     ref={listRef}
                 >
-                    {chat.map((item) => (
+                    {chat.map((item, index) => (
                         <ChattingCard
-                            key={item.id}
                             details={item}
+                            key={index}
                             updateChat={setChat}
                             setSelectedChatId={setSelectedChatId}
                             showFeedbackModal={() => setShowModal(true)}
@@ -101,19 +104,9 @@ export default function Home() {
                 </Stack>
             )}
 
-            <ChatInput
-                generateResponse={generateResponse}
-                setScroll={setScrollToBottom}
-                chat={chat}
-                clearChat={clearChat}
-            />
+            <ChatInput generateResponse={generateResponse} setScroll={setScrollToBottom} chat={chat} clearChat={() => setChat([])} />
 
-            <FeedbackModal
-                open={showModal}
-                handleClose={() => setShowModal(false)}
-                chatId={selectedChatId}
-                updateChat={setChat}
-            />
+            <FeedbackModal open={showModal} updateChat={setChat} chatId={selectedChatId} handleClose={() => setShowModal(false)} />
         </Stack>
-    );
+    )
 }
